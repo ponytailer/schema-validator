@@ -1,4 +1,4 @@
-from .extension import FlaskSchema, hide_route
+from .extension import FlaskSchema
 from .mixins import SchemaValidationError
 from .typing import ResponseReturnValue
 from .validation import (
@@ -12,7 +12,6 @@ from .validation import (
 
 __all__ = (
     "DataSource",
-    "hide_route",
     "FlaskSchema",
     "RequestSchemaValidationError",
     "ResponseReturnValue",
