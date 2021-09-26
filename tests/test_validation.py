@@ -4,13 +4,12 @@ from typing import Any, Optional
 import pytest
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from quart import Quart, websocket
+from flask import Flask
 
-from quart_schema import (
+from schema_validator import (
     DataSource,
-    QuartSchema,
+    FlaskSchema,
     ResponseReturnValue,
-    SchemaValidationError,
     validate_querystring,
     validate_request,
     validate_response,
@@ -67,7 +66,6 @@ VALID_PyDC = PyDCItem(count=2, details=PyDCDetails(name="bob"))
 INVALID_PyDC = PyDCDetails(name="bob")
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("path", ["/", "/dc", "/pydc"])
 @pytest.mark.parametrize(
     "json, status",
@@ -76,31 +74,30 @@ INVALID_PyDC = PyDCDetails(name="bob")
         (INVALID_DICT, 400),
     ],
 )
-async def test_request_validation(path: str, json: dict, status: int) -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
+def test_request_validation(path: str, json: dict, status: int) -> None:
+    app = Flask(__name__)
+    FlaskSchema(app)
 
     @app.route("/", methods=["POST"])
     @validate_request(Item)
-    async def item(data: Item) -> ResponseReturnValue:
+    def item(data: Item) -> ResponseReturnValue:
         return ""
 
     @app.route("/dc", methods=["POST"])
     @validate_request(DCItem)
-    async def dcitem(data: DCItem) -> ResponseReturnValue:
+    def dcitem(data: DCItem) -> ResponseReturnValue:
         return ""
 
     @app.route("/pydc", methods=["POST"])
     @validate_request(PyDCItem)
-    async def pydcitem(data: PyDCItem) -> ResponseReturnValue:
+    def pydcitem(data: PyDCItem) -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
-    response = await test_client.post(path, json=json)
+    response = test_client.post(path, json=json)
     assert response.status_code == status
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "data, status",
     [
@@ -108,21 +105,20 @@ async def test_request_validation(path: str, json: dict, status: int) -> None:
         ({"age": 2}, 400),
     ],
 )
-async def test_request_form_validation(data: dict, status: int) -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
+def test_request_form_validation(data: dict, status: int) -> None:
+    app = Flask(__name__)
+    FlaskSchema(app)
 
     @app.route("/", methods=["POST"])
     @validate_request(Details, source=DataSource.FORM)
-    async def item(data: Details) -> ResponseReturnValue:
+    def item(data: Details) -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
-    response = await test_client.post("/", form=data)
+    response = test_client.post("/", data=data)
     assert response.status_code == status
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "model, return_value, status",
     [
@@ -140,41 +136,21 @@ async def test_request_form_validation(data: dict, status: int) -> None:
         (PyDCItem, INVALID_PyDC, 500),
     ],
 )
-async def test_response_validation(model: Any, return_value: Any, status: int) -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
+def test_response_validation(model: Any, return_value: Any,
+    status: int) -> None:
+    app = Flask(__name__)
+    FlaskSchema(app)
 
     @app.route("/")
     @validate_response(model)
-    async def item() -> ResponseReturnValue:
+    def item() -> ResponseReturnValue:
         return return_value
 
     test_client = app.test_client()
-    response = await test_client.get("/")
+    response = test_client.get("/")
     assert response.status_code == status
 
 
-@pytest.mark.asyncio
-async def test_websocket_validation() -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
-
-    @app.websocket("/ws")
-    async def ws() -> None:
-        await websocket.receive_as(Item)  # type: ignore
-        with pytest.raises(SchemaValidationError):
-            await websocket.receive_as(Item)  # type: ignore
-        await websocket.send_as(VALID_DICT, Item)  # type: ignore
-        with pytest.raises(SchemaValidationError):
-            await websocket.send_as(VALID_DICT, Details)  # type: ignore
-
-    test_client = app.test_client()
-    async with test_client.websocket("/ws") as test_websocket:
-        await test_websocket.send_json(VALID_DICT)
-        await test_websocket.send_json(INVALID_DICT)
-
-
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "path, status",
     [
@@ -185,15 +161,15 @@ async def test_websocket_validation() -> None:
         ("/?count=a", 400),
     ],
 )
-async def test_querystring_validation(path: str, status: int) -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
+def test_querystring_validation(path: str, status: int) -> None:
+    app = Flask(__name__)
+    FlaskSchema(app)
 
     @app.route("/")
     @validate_querystring(QueryItem)
-    async def query_item(query_args: QueryItem) -> ResponseReturnValue:
+    def query_item(query_args: QueryItem) -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
-    response = await test_client.get(path)
+    response = test_client.get(path)
     assert response.status_code == status
