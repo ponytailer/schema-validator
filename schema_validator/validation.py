@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import asdict, is_dataclass
 from enum import Enum, auto
 from functools import wraps
@@ -13,11 +11,9 @@ from flask import Response, request
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest
 
+from .constants import SCHEMA_QUERYSTRING_ATTRIBUTE, \
+    SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE
 from .typing import PydanticModel, ResponseReturnValue
-
-FLASK_SCHEMA_REQUEST_ATTRIBUTE = "_flask_schema_request_schema"
-FLASK_SCHEMA_RESPONSE_ATTRIBUTE = "_flask_schema_response_schemas"
-FLASK_SCHEMA_QUERYSTRING_ATTRIBUTE = "_flask_schema_querystring_schema"
 
 
 class SchemaInvalidError(Exception):
@@ -25,14 +21,18 @@ class SchemaInvalidError(Exception):
 
 
 class ResponseSchemaValidationError(Exception):
-    def __init__(self,
-        validation_error: Optional[ValidationError] = None) -> None:
+    def __init__(
+        self,
+        validation_error: Optional[ValidationError] = None
+    ) -> None:
         self.validation_error = validation_error
 
 
 class RequestSchemaValidationError(BadRequest):
-    def __init__(self,
-        validation_error: Union[TypeError, ValidationError]) -> None:
+    def __init__(
+        self,
+        validation_error: Union[TypeError, ValidationError]
+    ) -> None:
         super().__init__()
         self.validation_error = validation_error
 
@@ -43,7 +43,6 @@ class DataSource(Enum):
 
 
 def validate_querystring(model_class: PydanticModel) -> Callable:
-
     if is_builtin_dataclass(model_class):
         model_class = pydantic_dataclass(model_class)
 
@@ -53,7 +52,7 @@ def validate_querystring(model_class: PydanticModel) -> Callable:
         raise SchemaInvalidError("Fields must be optional")
 
     def decorator(func: Callable) -> Callable:
-        setattr(func, FLASK_SCHEMA_QUERYSTRING_ATTRIBUTE, model_class)
+        setattr(func, SCHEMA_QUERYSTRING_ATTRIBUTE, model_class)
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -85,11 +84,11 @@ def validate_request(
         raise SchemaInvalidError("Form must not have nested objects")
 
     def decorator(func: Callable) -> Callable:
-        setattr(func, FLASK_SCHEMA_REQUEST_ATTRIBUTE, (model_class, source))
+        setattr(func, SCHEMA_REQUEST_ATTRIBUTE, (model_class, source))
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            data = request.get_json() if source == DataSource.JSON else request.form
+            data = request.get_json() if source == DataSource.JSON else request.form  # noqa
             try:
                 model = model_class(**data)
             except (TypeError, ValidationError) as error:
@@ -112,9 +111,9 @@ def validate_response(
     def decorator(
         func: Callable[..., ResponseReturnValue]
     ) -> Callable[..., Response]:
-        schemas = getattr(func, FLASK_SCHEMA_RESPONSE_ATTRIBUTE, {})
+        schemas = getattr(func, SCHEMA_RESPONSE_ATTRIBUTE, {})
         schemas[status_code] = model_class
-        setattr(func, FLASK_SCHEMA_RESPONSE_ATTRIBUTE, schemas)
+        setattr(func, SCHEMA_RESPONSE_ATTRIBUTE, schemas)
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
