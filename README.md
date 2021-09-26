@@ -1,6 +1,8 @@
 Flask-Dantic-Schema
 ============
 
+[![Build Status](https://travis-ci.org/huangxiaohen2738/flask-dantic-schema.svg?branch=master)](https://travis-ci.org/huangxiaohen2738/flask-dantic-schema)
+
 ```
     from dataclasses import dataclass
     from datetime import datetime
