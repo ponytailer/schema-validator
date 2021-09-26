@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "flask-dantic-schema"
+version = "0.0.1"
+description = "A Flask extension to provide schema validation with pydantic"
+authors = ["hs <huangxiaohen2738@gmail.com>"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+license = "MIT"
+readme = "README.rst"
+repository = "https:/github.com/huangxiaohen2738/flask-dantic-schema"
+
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+pyhumps = ">=1.6.1"
+
+pydantic=">=1.8"
+flask = ">= 2.0"
+typing_extensions = { version = "*", python = "<3.8" }
+
+[tool.poetry.dev-dependencies]
+tox = "*"
+
+[tool.pytest.ini_options]
+addopts = "--no-cov-on-fail --showlocals --strict"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
