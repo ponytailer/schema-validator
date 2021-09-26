@@ -1,8 +1,7 @@
 Flask-Dantic-Schema
 ============
 
-.. code-block:: python
-
+```
     from dataclasses import dataclass
     from datetime import datetime
     from typing import Optional
@@ -24,3 +23,4 @@ Flask-Dantic-Schema
     def create_todo(data: Todo) -> Todo:
         ... # Do something with data, e.g. save to the DB
         return data, 201
+```
