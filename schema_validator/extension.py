@@ -133,7 +133,6 @@ class FlaskSchema:
         swagger_ui_path: Optional[str] = "/docs",
         title: Optional[str] = None,
         version: str = "0.1.0",
-        tags: Optional[List[TagObject]] = None,
         convert_casing: bool = False,
         servers: Optional[List[ServerObject]] = [],
     ) -> None:
@@ -142,7 +141,6 @@ class FlaskSchema:
         self.swagger_ui_path = swagger_ui_path
         self.title = title
         self.version = version
-        self.tags: List[TagObject] = tags or []
         self.convert_casing = convert_casing
         self.servers = servers
         if app is not None:
@@ -181,8 +179,6 @@ class FlaskSchema:
             if self.swagger_ui_path is not None:
                 app.add_url_rule(self.swagger_ui_path, "swagger_ui",
                                  self.swagger_ui)
-
-        app.cli.add_command(_schema_command)
 
     @hide_route
     def openapi(self) -> dict:
@@ -332,6 +328,6 @@ def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
         },
         "components": components,
         "paths": paths,
-        "tags": extension.tags,
+        "tags": [],
         "servers": extension.servers,
     }

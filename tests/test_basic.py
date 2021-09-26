@@ -4,10 +4,10 @@ from typing import Optional
 import pytest
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from quart import Quart
+from flask import Flask
 
-from quart_schema import QuartSchema, ResponseReturnValue
-from quart_schema.typing import PydanticModel
+from schema_validator import FlaskSchema, ResponseReturnValue
+from schema_validator.typing import PydanticModel
 
 
 @dataclass
@@ -27,16 +27,15 @@ class PyDCDetails:
     age: Optional[int] = None
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("type_", [DCDetails, Details, PyDCDetails])
-async def test_make_response(type_: PydanticModel) -> None:
-    app = Quart(__name__)
-    QuartSchema(app)
+def test_make_response(type_: PydanticModel) -> None:
+    app = Flask(__name__)
+    FlaskSchema(app)
 
     @app.route("/")
-    async def index() -> ResponseReturnValue:
+    def index() -> ResponseReturnValue:
         return type_(name="bob", age=2)
 
     test_client = app.test_client()
-    response = await test_client.get("/")
-    assert (await response.get_json()) == {"name": "bob", "age": 2}
+    response = test_client.get("/")
+    assert response.get_json() == {"name": "bob", "age": 2}
