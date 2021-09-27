@@ -1,5 +1,7 @@
-Flask-Dantic-Schema
+flask-dantic-schema
 ============
+
+#### Generate for quart-schema
 
 [![Build Status](https://app.travis-ci.com/huangxiaohen2738/flask-dantic-schema.svg?branch=main)](https://app.travis-ci.com/huangxiaohen2738/flask-dantic-schema)
 

@@ -97,8 +97,6 @@ class FlaskSchema:
         else:
             app.json_encoder = PydanticJSONEncoder
 
-        app.make_response = convert_model_result(app.make_response)
-
         app.config.setdefault(
             "FLASK_SCHEMA_SWAGGER_JS_URL",
             SWAGGER_JS_URL
@@ -133,28 +131,6 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
     new_schema = schema.copy()
     definitions = new_schema.pop("definitions", {})
     return definitions, new_schema
-
-
-def convert_model_result(func: Callable) -> Callable:
-    @wraps(func)
-    def decorator(result) -> ResponseReturnValue:
-        status_or_headers = None
-        headers = None
-        if isinstance(result, tuple):
-            value, status_or_headers, headers = result + (None,) * (
-                3 - len(result))
-        else:
-            value = result
-
-        if is_dataclass(value):
-            dict_or_value = asdict(value)
-        elif isinstance(value, BaseModel):
-            dict_or_value = value.dict()
-        else:
-            dict_or_value = value
-        return func((dict_or_value, status_or_headers, headers))
-
-    return decorator
 
 
 def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:

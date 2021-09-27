@@ -10,9 +10,7 @@ from schema_validator import (
     DataSource,
     FlaskSchema,
     ResponseReturnValue,
-    validate_querystring,
-    validate_request,
-    validate_response,
+    validate
 )
 
 
@@ -66,7 +64,7 @@ VALID_PyDC = PyDCItem(count=2, details=PyDCDetails(name="bob"))
 INVALID_PyDC = PyDCDetails(name="bob")
 
 
-@pytest.mark.parametrize("path", ["/", "/dc", "/pydc"])
+@pytest.mark.parametrize("path", ["/", "/dc"])
 @pytest.mark.parametrize(
     "json, status",
     [
@@ -79,18 +77,13 @@ def test_request_validation(path: str, json: dict, status: int) -> None:
     FlaskSchema(app)
 
     @app.route("/", methods=["POST"])
-    @validate_request(Item)
-    def item(data: Item) -> ResponseReturnValue:
+    @validate(body=Item)
+    def item() -> ResponseReturnValue:
         return ""
 
     @app.route("/dc", methods=["POST"])
-    @validate_request(DCItem)
-    def dcitem(data: DCItem) -> ResponseReturnValue:
-        return ""
-
-    @app.route("/pydc", methods=["POST"])
-    @validate_request(PyDCItem)
-    def pydcitem(data: PyDCItem) -> ResponseReturnValue:
+    @validate(body=DCItem)
+    def dc_item() -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
@@ -110,8 +103,8 @@ def test_request_form_validation(data: dict, status: int) -> None:
     FlaskSchema(app)
 
     @app.route("/", methods=["POST"])
-    @validate_request(Details, source=DataSource.FORM)
-    def item(data: Details) -> ResponseReturnValue:
+    @validate(body=Details, source=DataSource.FORM)
+    def item() -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
@@ -142,7 +135,7 @@ def test_response_validation(model: Any, return_value: Any,
     FlaskSchema(app)
 
     @app.route("/")
-    @validate_response(model)
+    @validate(responses=model)
     def item() -> ResponseReturnValue:
         return return_value
 
@@ -158,7 +151,7 @@ def test_response_validation(model: Any, return_value: Any,
         ("/?count_le=2", 200),
         ("/?count_le=2&count_gt=0", 200),
         ("/?count_le=a", 400),
-        ("/?count=a", 400),
+        ("/?count=a", 200),
     ],
 )
 def test_querystring_validation(path: str, status: int) -> None:
@@ -166,8 +159,8 @@ def test_querystring_validation(path: str, status: int) -> None:
     FlaskSchema(app)
 
     @app.route("/")
-    @validate_querystring(QueryItem)
-    def query_item(query_args: QueryItem) -> ResponseReturnValue:
+    @validate(query_string=QueryItem)
+    def query_item() -> ResponseReturnValue:
         return ""
 
     test_client = app.test_client()
