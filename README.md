@@ -1,4 +1,4 @@
-flask-dantic-schema
+schema-validator
 ============
 
 #### Generate from quart-schema
