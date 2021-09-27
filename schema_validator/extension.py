@@ -106,7 +106,7 @@ class FlaskSchema:
             SWAGGER_CSS_URL
         )
 
-        if self.openapi_path is not None and not app.config.get("HIDE_ROUTE"):
+        if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
             app.add_url_rule(self.openapi_path, "openapi", self.openapi)
             if self.swagger_ui_path is not None:
                 app.add_url_rule(
