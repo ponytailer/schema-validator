@@ -60,6 +60,12 @@ schema-validator
     def delete():
         # balabala
         return jsonify(id=1)
+     
+    @tags("SOME-TAG", "OTHER-TAG")
+    class View(MethodView):
+        @validate(...)
+        def get(self):
+            return {}
        
     app.cli.add_command(generate_schema_command)
     

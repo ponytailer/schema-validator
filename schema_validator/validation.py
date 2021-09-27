@@ -176,6 +176,12 @@ def validate(
     def update_todo():
         ... # Do something with data, e.g. save to the DB
         return TodoResponse(id=1, name="123")
+
+    @tags("SOME-TAG", "OTHER-TAG")
+    class View(MethodView):
+        @validate(...)
+        def get(self):
+            return {}
     """
     if validate_path:
         pass
