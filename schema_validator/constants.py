@@ -2,6 +2,7 @@ SCHEMA_REQUEST_ATTRIBUTE = "_schema_request_schema"
 SCHEMA_RESPONSE_ATTRIBUTE = "_schema_response_schemas"
 SCHEMA_QUERYSTRING_ATTRIBUTE = "_schema_querystring_schema"
 REF_PREFIX = "#/components/schemas/"
+IGNORE_METHODS = {"OPTIONS", "HEAD"}
 
 SWAGGER_TEMPLATE = """
 <head>
@@ -28,5 +29,5 @@ SWAGGER_TEMPLATE = """
 </body>
 """
 
-SWAGGER_JS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.47.1/swagger-ui-bundle.js",
-SWAGGER_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.47.1/swagger-ui.min.css",
+SWAGGER_JS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.47.1/swagger-ui-bundle.js"
+SWAGGER_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.47.1/swagger-ui.min.css"

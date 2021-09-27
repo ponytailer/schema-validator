@@ -15,10 +15,11 @@ from flask.json import JSONDecoder, JSONEncoder
 from .constants import (
     REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE, SCHEMA_REQUEST_ATTRIBUTE,
     SCHEMA_RESPONSE_ATTRIBUTE, SWAGGER_CSS_URL, SWAGGER_JS_URL,
-    SWAGGER_TEMPLATE
+    SWAGGER_TEMPLATE, IGNORE_METHODS
 )
 from .typing import ServerObject
 from .validation import DataSource
+
 
 PATH_RE = re.compile("<(?:[^:]*:)?([^>]+)>")
 
@@ -135,13 +136,21 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
 
 def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
     paths: Dict[str, dict] = {}
-    components = {"schemas": {}}  # type: ignore
+    components = {"schemas": {}}
     for rule in app.url_map.iter_rules():
         func = app.view_functions[rule.endpoint]
-        path_object = {  # type: ignore
+
+        view_class = getattr(func, "view_class", None)
+        if view_class is not None:
+            methods = rule.methods - IGNORE_METHODS
+            md = list(methods)[0].lower()
+            func = getattr(view_class, md, None)
+
+        path_object = {
             "parameters": [],
             "responses": {},
         }
+
         if func.__doc__ is not None:
             summary, *description = func.__doc__.splitlines()
             path_object["description"] = "\n".join(description)
