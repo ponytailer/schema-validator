@@ -1,6 +1,7 @@
 SCHEMA_REQUEST_ATTRIBUTE = "_schema_request_schema"
 SCHEMA_RESPONSE_ATTRIBUTE = "_schema_response_schemas"
 SCHEMA_QUERYSTRING_ATTRIBUTE = "_schema_querystring_schema"
+SCHEMA_TAG_ATTRIBUTE = "_schema_tag_schemas"
 REF_PREFIX = "#/components/schemas/"
 IGNORE_METHODS = {"OPTIONS", "HEAD"}
 

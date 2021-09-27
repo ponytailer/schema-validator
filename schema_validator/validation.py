@@ -1,9 +1,7 @@
-import json
-
 from dataclasses import asdict, is_dataclass
 from enum import Enum, auto
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Union, cast
+from typing import Any, Callable, Dict, Optional, Union, cast, Iterable
 
 from pydantic import BaseModel, ValidationError
 from pydantic.dataclasses import dataclass as pydantic_dataclass, \
@@ -13,8 +11,11 @@ from flask import Response, jsonify, request, g
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest
 
-from .constants import SCHEMA_QUERYSTRING_ATTRIBUTE, \
+from .constants import (
+    SCHEMA_QUERYSTRING_ATTRIBUTE,
+    SCHEMA_TAG_ATTRIBUTE,
     SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE
+)
 from .typing import PydanticModel
 
 
@@ -107,6 +108,14 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
             model_value = cast(BaseModel, model_value)
             return model_value.dict(), status_or_headers, headers
     return result
+
+
+def tag(*tags: Iterable[str]) -> Callable:
+    """Add tag names to the route."""
+    def decorator(func: Callable) -> Callable:
+        setattr(func, SCHEMA_TAG_ATTRIBUTE, list(set(tags)))
+        return func
+    return decorator
 
 
 def validate(

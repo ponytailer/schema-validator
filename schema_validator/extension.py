@@ -11,7 +11,7 @@ from flask.json import JSONDecoder, JSONEncoder
 from .constants import (
     IGNORE_METHODS, REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE,
     SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE, SWAGGER_CSS_URL,
-    SWAGGER_JS_URL, SWAGGER_TEMPLATE
+    SWAGGER_JS_URL, SWAGGER_TEMPLATE, SCHEMA_TAG_ATTRIBUTE
 )
 from .typing import ServerObject
 from .validation import DataSource
@@ -156,6 +156,14 @@ def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
                 summary, *description = function.__doc__.splitlines()
                 path_object["description"] = "\n".join(description)
                 path_object["summary"] = summary
+
+            if view_class:
+                tags = getattr(view_class, SCHEMA_TAG_ATTRIBUTE, [])
+            else:
+                tags = getattr(func, SCHEMA_TAG_ATTRIBUTE, [])
+
+            if tags:
+                path_object["tags"] = tags
 
             response_models = getattr(function, SCHEMA_RESPONSE_ATTRIBUTE, {})
 
