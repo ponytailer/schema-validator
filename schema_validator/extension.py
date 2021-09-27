@@ -138,6 +138,11 @@ def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
     paths: Dict[str, dict] = {}
     components = {"schemas": {}}
     for rule in app.url_map.iter_rules():
+        if rule.endpoint in [
+            "static", "openapi", "swagger_ui"
+        ]:
+            continue
+
         func = app.view_functions[rule.endpoint]
 
         view_class = getattr(func, "view_class", None)
