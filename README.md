@@ -3,9 +3,6 @@ flask-dantic-schema
 
 #### Generate from quart-schema
 
-[![Build Status](https://app.travis-ci.com/huangxiaohen2738/flask-dantic-schema.svg?branch=main)](https://app.travis-ci.com/huangxiaohen2738/flask-dantic-schema)
-
-
 
 ### Install
 
@@ -43,7 +40,7 @@ flask-dantic-schema
     @app.post("/")
     @validate(body=Todo, responses=TodoResponse)
     def create_todo():
-        ... # Do something with data, e.g. save to the DB
+        # balabala
         return dict(id=1, name="2")
         
     @app.put("/")
@@ -52,8 +49,17 @@ flask-dantic-schema
         responses={200: TodoResponse, 400: TodoResponse}
     )
     def update_todo():
-        ... # Do something with data, e.g. save to the DB
+        # balabala
         return TodoResponse(id=1, name="123")
+
+    @app.delete("/")
+    @validate(
+        body=Todo,
+        responses={200: TodoResponse}
+    )
+    def delete():
+        # balabala
+        return jsonify(id=1)
        
     app.cli.add_command(generate_schema_command)
     
