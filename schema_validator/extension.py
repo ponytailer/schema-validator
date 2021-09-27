@@ -1,25 +1,20 @@
 import re
 from collections.abc import Mapping
-from dataclasses import asdict, is_dataclass
-from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from humps import camelize, decamelize
-from pydantic import BaseModel
 from pydantic.json import pydantic_encoder
 from pydantic.schema import model_schema
 from flask import Flask, current_app, render_template_string
-from flask.typing import ResponseReturnValue
 from flask.json import JSONDecoder, JSONEncoder
 
 from .constants import (
-    REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE, SCHEMA_REQUEST_ATTRIBUTE,
-    SCHEMA_RESPONSE_ATTRIBUTE, SWAGGER_CSS_URL, SWAGGER_JS_URL,
-    SWAGGER_TEMPLATE, IGNORE_METHODS
+    IGNORE_METHODS, REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE,
+    SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE, SWAGGER_CSS_URL,
+    SWAGGER_JS_URL, SWAGGER_TEMPLATE
 )
 from .typing import ServerObject
 from .validation import DataSource
-
 
 PATH_RE = re.compile("<(?:[^:]*:)?([^>]+)>")
 
@@ -59,7 +54,6 @@ class FlaskSchema:
             app = Flask(__name__)
             flask_schema.init_app(app)
             return app
-
     Arguments:
         openapi_path: The path used to serve the openapi json on, or None
             to disable documentation.
@@ -137,6 +131,7 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
 def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
     paths: Dict[str, dict] = {}
     components = {"schemas": {}}
+
     for rule in app.url_map.iter_rules():
         if rule.endpoint in [
             "static", "openapi", "swagger_ui"
@@ -145,91 +140,87 @@ def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
 
         func = app.view_functions[rule.endpoint]
 
-        view_class = getattr(func, "view_class", None)
-        if view_class is not None:
-            methods = rule.methods - IGNORE_METHODS
-            md = list(methods)[0].lower()
-            func = getattr(view_class, md, None)
+        for method in rule.methods - IGNORE_METHODS:
+            view_func = None
+            view_class = getattr(func, "view_class", None)
 
-        path_object = {
-            "parameters": [],
-            "responses": {},
-        }
+            if view_class is not None:
+                view_func = getattr(view_class, method.lower(), None)
 
-        if func.__doc__ is not None:
-            summary, *description = func.__doc__.splitlines()
-            path_object["description"] = "\n".join(description)
-            path_object["summary"] = summary
-
-        response_models = getattr(func, SCHEMA_RESPONSE_ATTRIBUTE, {})
-        for status_code, model_class in response_models.items():
-            schema = model_schema(model_class, ref_prefix=REF_PREFIX)
-            if extension.convert_casing:
-                schema = camelize(schema)
-            definitions, schema = _split_definitions(schema)
-            components["schemas"].update(definitions)
-            path_object["responses"][status_code] = {  # type: ignore
-                "content": {
-                    "application/json": {
-                        "schema": schema,
-                    },
-                },
-                "description": model_class.__doc__,
+            path_object = {
+                "parameters": [], "responses": {},
             }
+            function = view_func or func
 
-        request_data = getattr(func, SCHEMA_REQUEST_ATTRIBUTE, None)
-        if request_data is not None:
-            schema = model_schema(request_data[0], ref_prefix=REF_PREFIX)
-            if extension.convert_casing:
-                schema = camelize(schema)
-            definitions, schema = _split_definitions(schema)
-            components["schemas"].update(definitions)
+            if function.__doc__ is not None:
+                summary, *description = function.__doc__.splitlines()
+                path_object["description"] = "\n".join(description)
+                path_object["summary"] = summary
 
-            if request_data[1] == DataSource.JSON:
-                encoding = "application/json"
-            else:
-                encoding = "application/x-www-form-urlencoded"
+            response_models = getattr(function, SCHEMA_RESPONSE_ATTRIBUTE, {})
 
-            path_object["requestBody"] = {
-                "content": {
-                    encoding: {
-                        "schema": schema,
+            for status_code, model_class in response_models.items():
+                schema = model_schema(model_class, ref_prefix=REF_PREFIX)
+                if extension.convert_casing:
+                    schema = camelize(schema)
+                definitions, schema = _split_definitions(schema)
+                components["schemas"].update(definitions)
+                path_object["responses"][status_code] = {  # type: ignore
+                    "content": {
+                        "application/json": {
+                            "schema": schema,
+                        },
                     },
-                },
-            }
+                    "description": model_class.__doc__,
+                }
 
-        querystring_model = getattr(
-            func, SCHEMA_QUERYSTRING_ATTRIBUTE, None)
-        if querystring_model is not None:
-            schema = model_schema(querystring_model, ref_prefix=REF_PREFIX)
-            if extension.convert_casing:
-                schema = camelize(schema)
-            definitions, schema = _split_definitions(schema)
-            components["schemas"].update(definitions)
-            for name, type_ in schema["properties"].items():
-                path_object["parameters"].append(  # type: ignore
+            request_data = getattr(function, SCHEMA_REQUEST_ATTRIBUTE, None)
+
+            if request_data is not None:
+                schema = model_schema(request_data[0], ref_prefix=REF_PREFIX)
+                if extension.convert_casing:
+                    schema = camelize(schema)
+                definitions, schema = _split_definitions(schema)
+                components["schemas"].update(definitions)
+
+                if request_data[1] == DataSource.JSON:
+                    encoding = "application/json"
+                else:
+                    encoding = "application/x-www-form-urlencoded"
+
+                path_object["requestBody"] = {
+                    "content": {
+                        encoding: {
+                            "schema": schema,
+                        },
+                    },
+                }
+
+            querystring_model = getattr(
+                function, SCHEMA_QUERYSTRING_ATTRIBUTE, None)
+            if querystring_model is not None:
+                schema = model_schema(querystring_model, ref_prefix=REF_PREFIX)
+                if extension.convert_casing:
+                    schema = camelize(schema)
+                definitions, schema = _split_definitions(schema)
+                components["schemas"].update(definitions)
+                for name, type_ in schema["properties"].items():
+                    path_object["parameters"].append(
+                        {
+                            "name": name,
+                            "in": "query",
+                            "schema": type_,
+                        }
+                    )
+            for name, converter in rule._converters.items():
+                path_object["parameters"].append(
                     {
                         "name": name,
-                        "in": "query",
-                        "schema": type_,
+                        "in": "path",
                     }
                 )
-
-        for name, converter in rule._converters.items():
-            path_object["parameters"].append(  # type: ignore
-                {
-                    "name": name,
-                    "in": "path",
-                }
-            )
-
-        path = re.sub(PATH_RE, r"{\1}", rule.rule)
-        paths.setdefault(path, {})
-
-        for method in rule.methods:
-            if method == "HEAD" or (
-                method == "OPTIONS" and rule.provide_automatic_options):  # type: ignore  # noqa: E501
-                continue
+            path = re.sub(PATH_RE, r"{\1}", rule.rule)
+            paths.setdefault(path, {})
             paths[path][method.lower()] = path_object
 
     return {
