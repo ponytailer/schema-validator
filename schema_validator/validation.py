@@ -50,6 +50,22 @@ def check_body_schema(
     return body
 
 
+def check_response_schema(
+    responses: Union[PydanticModel, Dict]
+) -> Dict[int, PydanticModel]:
+
+    if not isinstance(responses, dict):
+        if is_builtin_dataclass(responses):
+            responses = pydantic_dataclass(responses).__pydantic_model__
+        responses = {200: responses}
+
+    for k, v in responses.items():
+        if is_builtin_dataclass(v):
+            responses[k] = pydantic_dataclass(v).__pydantic_model__
+
+    return responses
+
+
 def check_response(result, response_model: Dict[int, PydanticModel]):
     status_or_headers: Union[None, int, str, Dict, list] = None
     headers: Optional[Headers] = None
@@ -93,8 +109,7 @@ def validate(
     body: Optional[PydanticModel] = None,
     source: DataSource = DataSource.JSON,
     validate_path: bool = False,
-    response: Optional[PydanticModel] = None,
-    responses: Dict[int, Optional[PydanticModel]] = None,
+    responses: Union[PydanticModel, Dict[int, PydanticModel], None] = None,
     headers: Optional[PydanticModel] = None
 ) -> Callable:
     """
@@ -107,11 +122,6 @@ def validate(
             the body source
         response:
             response model define
-    TODO:
-        validate_path:
-            check the params in path
-        headers:
-            headers model define
     """
     if validate_path:
         pass
@@ -124,12 +134,17 @@ def validate(
     if body is not None:
         body = check_body_schema(body, source)
 
+    if responses is not None:
+        responses = check_response_schema(responses)
+
     def decorator(func: Callable) -> Callable[..., Response]:
 
         if query_string:
             setattr(func, SCHEMA_QUERYSTRING_ATTRIBUTE, query_string)
         if body:
             setattr(func, SCHEMA_REQUEST_ATTRIBUTE, (body, source))
+        if responses:
+            setattr(func, SCHEMA_RESPONSE_ATTRIBUTE, responses)
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -144,7 +159,6 @@ def validate(
                     g.body_params = body_model
 
             if query_string:
-                print(request.args, query_string)
                 try:
                     query_params = query_string(**request.args)
                 except (TypeError, ValidationError) as ve:
@@ -158,12 +172,7 @@ def validate(
             result = func(*args, **kwargs)
 
             if responses:
-                setattr(func, SCHEMA_RESPONSE_ATTRIBUTE, responses)
                 return check_response(result, responses)
-            if response:
-                resp = {200: response}
-                setattr(func, SCHEMA_RESPONSE_ATTRIBUTE, resp)
-                return check_response(result, resp)
             return result
 
         return wrapper

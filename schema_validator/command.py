@@ -22,7 +22,7 @@ def generate_schema_command(output: Optional[str]) -> None:
         app.cli.add_command(generate_schema_command)
     virtualenv: flask schema
     """
-    schema = _build_openapi_schema(app, app.extensions["QUART_SCHEMA"])
+    schema = _build_openapi_schema(app, app.extensions["FLASK_SCHEMA"])
     formatted_spec = json.dumps(schema, indent=2)
     if output is not None:
         with open(output, "w") as file_:

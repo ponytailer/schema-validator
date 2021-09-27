@@ -135,7 +135,7 @@ def test_response_validation(model: Any, return_value: Any,
     FlaskSchema(app)
 
     @app.route("/")
-    @validate(response=model)
+    @validate(responses=model)
     def item() -> ResponseReturnValue:
         return return_value
 

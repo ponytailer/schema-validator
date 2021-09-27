@@ -18,7 +18,7 @@ def test_response_casing() -> None:
     FlaskSchema(app, convert_casing=True)
 
     @app.route("/", methods=["GET"])
-    @validate(response=Data)
+    @validate(responses=Data)
     def index() -> ResponseReturnValue:
         return Data(snake_case="Hello")
 
