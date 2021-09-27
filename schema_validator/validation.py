@@ -1,3 +1,5 @@
+import json
+
 from dataclasses import asdict, is_dataclass
 from enum import Enum, auto
 from functools import wraps
@@ -75,6 +77,9 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
             3 - len(result))
     else:
         value = result
+
+    if isinstance(value, Response):
+        value = value.get_json()
 
     status = 200
     if status_or_headers is not None and not isinstance(

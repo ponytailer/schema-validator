@@ -41,10 +41,19 @@ flask-dantic-schema
         name: str
 
     @app.post("/")
-    @validate(body=Todo, responses={200: TodoResponse})
+    @validate(body=Todo, responses=TodoResponse)
     def create_todo():
         ... # Do something with data, e.g. save to the DB
-        return data
+        return dict(id=1, name="2")
+        
+    @app.put("/")
+    @validate(
+        body=Todo,
+        responses={200: TodoResponse, 400: TodoResponse}
+    )
+    def update_todo():
+        ... # Do something with data, e.g. save to the DB
+        return TodoResponse(id=1, name="123")
        
     app.cli.add_command(generate_schema_command)
     

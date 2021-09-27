@@ -4,7 +4,7 @@ from typing import Any, Optional
 import pytest
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from flask import Flask
+from flask import Flask, jsonify
 
 from schema_validator import (
     DataSource,
@@ -137,7 +137,7 @@ def test_response_validation(model: Any, return_value: Any,
     @app.route("/")
     @validate(responses=model)
     def item() -> ResponseReturnValue:
-        return return_value
+        return jsonify(return_value)
 
     test_client = app.test_client()
     response = test_client.get("/")
