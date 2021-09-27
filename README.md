@@ -71,3 +71,8 @@ schema-validator
     
     virtualenv:  flask schema swagger.json -> generate json swagger
 ```
+
+
+##### FEATURES
+    - direct package/api/view_class name to export json-swagger
+    - direct tag to swagger html

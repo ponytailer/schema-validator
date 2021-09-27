@@ -110,7 +110,7 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
     return result
 
 
-def tag(*tags: Iterable[str]) -> Callable:
+def tags(*tags: Iterable[str]) -> Callable:
     """Add tag names to the route."""
     def decorator(func: Callable) -> Callable:
         setattr(func, SCHEMA_TAG_ATTRIBUTE, list(set(tags)))
