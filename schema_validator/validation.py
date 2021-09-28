@@ -88,6 +88,8 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
     ) and str(status_or_headers).isdigit():
         status = int(status_or_headers)
 
+    bad_status = BadRequest.code
+
     for status_code, model_cls in response_model.items():
         if status_code != status:
             continue
@@ -95,13 +97,13 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
             try:
                 model_value = model_cls(**value)
             except (TypeError, ValidationError) as ve:
-                return jsonify(validation_error=str(ve.errors())), BadRequest
+                return jsonify(validation_error=str(ve.errors())), bad_status
         elif type(value) == model_cls:
             model_value = value
         elif is_builtin_dataclass(value):
             model_value = model_cls(**asdict(value))
         else:
-            return jsonify(validation_error="invalid response"), BadRequest
+            return jsonify(validation_error="invalid response"), bad_status
         if is_dataclass(model_value):
             return asdict(model_value), status_or_headers, headers
         else:
