@@ -79,9 +79,9 @@ schema-validator
 
 app.config["SWAGGER_ROUTE"] = True
 
-http://yourhost/docs   -> show the all swagger
+http://yourhost/swagger/docs   -> show the all swagger
 
-http://yourhost/docs/{tag} -> show the swagger which include tag
+http://yourhost/swagger/docs/{tag} -> show the swagger which include tag
 
 ```
 </details>
