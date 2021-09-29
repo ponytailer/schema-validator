@@ -124,9 +124,10 @@ def validate(
     query_string: Optional[PydanticModel] = None,
     body: Optional[PydanticModel] = None,
     source: DataSource = DataSource.JSON,
-    validate_path: bool = False,
+    validate_path_args: bool = False,
     responses: Union[PydanticModel, Dict[int, PydanticModel], None] = None,
-    headers: Optional[PydanticModel] = None
+    headers: Optional[PydanticModel] = None,
+    tags: Optional[Iterable[str]] = None
 ) -> Callable:
     """
     params:
@@ -173,7 +174,8 @@ def validate(
     @app.put("/")
     @validate(
         body=Todo,
-        responses={200: TodoResponse, 400: TodoResponse}
+        responses={200: TodoResponse, 400: TodoResponse},
+        tags=["SOME-TAG"]
     )
     def update_todo():
         ... # Do something with data, e.g. save to the DB
@@ -185,8 +187,11 @@ def validate(
         def get(self):
             return {}
     """
-    if validate_path:
+
+    # TODO
+    if validate_path_args:
         pass
+    # TODO
     if headers is not None:
         pass
 
@@ -207,6 +212,8 @@ def validate(
             setattr(func, SCHEMA_REQUEST_ATTRIBUTE, (body, source))
         if responses:
             setattr(func, SCHEMA_RESPONSE_ATTRIBUTE, responses)
+        if tags:
+            setattr(func, SCHEMA_TAG_ATTRIBUTE, list(set(tags)))
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
