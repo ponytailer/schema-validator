@@ -8,7 +8,8 @@ schema-validator
 
  - `pip install schema-validator`
 
-### How to use
+<details>
+<summary>How to use</summary>
 
 ```
     from dataclasses import dataclass
@@ -69,8 +70,11 @@ schema-validator
        
     
 ```
+</details>
 
-### How to show the swagger
+<details>
+<summary>How to show the swagger </summary>
+
 ```
 
 app.config["SWAGGER_ROUTE"] = True
@@ -80,8 +84,11 @@ http://yourhost/docs   -> show the all swagger
 http://yourhost/docs/{tag} -> show the swagger which include tag
 
 ```
+</details>
 
-### How to export the swagger
+<details>
+<summary>How to export the swagger </summary>
+
 ```
 add command in flask:
     app.cli.add_command(generate_schema_command)
@@ -95,3 +102,4 @@ Export the swagger which include the ACCOUNT tag:
  - flask schema -o swagger.json -t ACCOUNT
 
 ```
+</details>
