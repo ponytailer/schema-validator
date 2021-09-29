@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple, Type, TypedDict, Union, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 from flask.typing import (
@@ -49,6 +49,22 @@ class ResponseSchema(BaseModel):
 
 @dataclass
 class ResponseClass:
+    """
+        base response schema with dataclass
+
+        @dataclass
+        class B(ResponseClass):
+            name: str
+
+        =>
+
+        type B struct{
+            success: Optional[bool]
+            error_no: Optional[int32]
+            error_message: Optional[string]
+            name: string
+        }
+    """
     success: Optional[bool] = True
     error_no: Optional[int] = 0
     error_message: Optional[str] = ""

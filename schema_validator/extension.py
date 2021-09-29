@@ -67,14 +67,14 @@ class FlaskSchema:
         self,
         app: Optional[Flask] = None,
         *,
-        swagger_ui_path: Optional[str] = "/docs",
+        swagger_ui_path: Optional[str] = "/swagger/docs",
         title: Optional[str] = None,
         version: str = "0.1.0",
         convert_casing: bool = False,
         servers: Optional[List[ServerObject]] = None
     ) -> None:
-        self.openapi_path = "/openapi.json"
-        self.openapi_tag_path = "/openapi-<tag>.json"
+        self.openapi_path = "/swagger/openapi.json"
+        self.openapi_tag_path = "/swagger/openapi-<tag>.json"
         self.swagger_ui_path = swagger_ui_path
         self.title = title
         self.version = version
@@ -124,7 +124,7 @@ class FlaskSchema:
         return _build_openapi_schema(current_app, self, tag)
 
     def swagger_ui(self, tag: Optional[str] = None) -> str:
-        path = f"/openapi-{tag}.json" if tag else self.openapi_path
+        path = f"/swagger/openapi-{tag}.json" if tag else self.openapi_path
         return render_template_string(
             SWAGGER_TEMPLATE,
             title=self.title,
