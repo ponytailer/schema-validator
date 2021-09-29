@@ -97,7 +97,7 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
             try:
                 model_value = model_cls(**value)
             except (TypeError, ValidationError) as ve:
-                return jsonify(validation_error=str(ve.errors())), bad_status
+                return jsonify(validation_error=str(ve)), bad_status
         elif type(value) == model_cls:
             model_value = value
         elif is_builtin_dataclass(value):

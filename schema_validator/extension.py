@@ -10,8 +10,8 @@ from flask.json import JSONDecoder, JSONEncoder
 
 from .constants import (
     IGNORE_METHODS, REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE,
-    SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE, SWAGGER_CSS_URL,
-    SWAGGER_JS_URL, SWAGGER_TEMPLATE, SCHEMA_TAG_ATTRIBUTE
+    SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE, SCHEMA_TAG_ATTRIBUTE,
+    SWAGGER_CSS_URL, SWAGGER_JS_URL, SWAGGER_TEMPLATE
 )
 from .typing import ServerObject
 from .validation import DataSource
@@ -67,14 +67,14 @@ class FlaskSchema:
         self,
         app: Optional[Flask] = None,
         *,
-        openapi_path: Optional[str] = "/openapi.json",
         swagger_ui_path: Optional[str] = "/docs",
         title: Optional[str] = None,
         version: str = "0.1.0",
         convert_casing: bool = False,
         servers: Optional[List[ServerObject]] = None
     ) -> None:
-        self.openapi_path = openapi_path
+        self.openapi_path = "/openapi.json"
+        self.openapi_tag_path = "/openapi-<tag>.json"
         self.swagger_ui_path = swagger_ui_path
         self.title = title
         self.version = version
@@ -102,21 +102,33 @@ class FlaskSchema:
         )
 
         if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
-            app.add_url_rule(self.openapi_path, "openapi", self.openapi)
+            app.add_url_rule(
+                self.openapi_path, "openapi",
+                self.openapi
+            )
+            app.add_url_rule(
+                self.openapi_tag_path, "openapi_tag",
+                lambda tag: self.openapi(tag)
+            )
             if self.swagger_ui_path is not None:
                 app.add_url_rule(
                     self.swagger_ui_path, "swagger_ui",
                     self.swagger_ui
                 )
+                app.add_url_rule(
+                    f"{self.swagger_ui_path}/<tag>", "swagger_ui_tag",
+                    lambda tag: self.swagger_ui(tag)
+                )
 
-    def openapi(self) -> dict:
-        return _build_openapi_schema(current_app, self)
+    def openapi(self, tag: Optional[str] = None) -> dict:
+        return _build_openapi_schema(current_app, self, tag)
 
-    def swagger_ui(self) -> str:
+    def swagger_ui(self, tag: Optional[str] = None) -> str:
+        path = f"/openapi-{tag}.json" if tag else self.openapi_path
         return render_template_string(
             SWAGGER_TEMPLATE,
             title=self.title,
-            openapi_path=self.openapi_path,
+            openapi_path=path,
             swagger_js_url=current_app.config["FLASK_SCHEMA_SWAGGER_JS_URL"],
             swagger_css_url=current_app.config["FLASK_SCHEMA_SWAGGER_CSS_URL"],
         )
@@ -128,7 +140,15 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
     return definitions, new_schema
 
 
-def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
+def _build_openapi_schema(
+    app: Flask,
+    extension: FlaskSchema,
+    expected_tag: str = None
+) -> dict:
+    """
+    params:
+        expected_tag: str
+    """
     paths: Dict[str, dict] = {}
     components = {"schemas": {}}
 
@@ -164,6 +184,9 @@ def _build_openapi_schema(app: Flask, extension: FlaskSchema) -> dict:
 
             if tags:
                 path_object["tags"] = tags
+
+            if expected_tag and expected_tag not in tags:
+                continue
 
             response_models = getattr(function, SCHEMA_RESPONSE_ATTRIBUTE, {})
 

@@ -116,21 +116,23 @@ def test_request_form_validation(data: dict, status: int) -> None:
     "model, return_value, status",
     [
         (Item, VALID_DICT, 200),
-        (Item, INVALID_DICT, 500),
+        (Item, INVALID_DICT, 400),
         (Item, VALID, 200),
-        (Item, INVALID, 500),
+        (Item, INVALID, 400),
         (DCItem, VALID_DICT, 200),
-        (DCItem, INVALID_DICT, 500),
+        (DCItem, INVALID_DICT, 400),
         (DCItem, VALID_DC, 200),
-        (DCItem, INVALID_DC, 500),
+        (DCItem, INVALID_DC, 400),
         (PyDCItem, VALID_DICT, 200),
-        (PyDCItem, INVALID_DICT, 500),
+        (PyDCItem, INVALID_DICT, 400),
         (PyDCItem, VALID_PyDC, 200),
-        (PyDCItem, INVALID_PyDC, 500),
+        (PyDCItem, INVALID_PyDC, 400),
     ],
 )
-def test_response_validation(model: Any, return_value: Any,
-    status: int) -> None:
+def test_response_validation(
+    model: Any, return_value: Any,
+    status: int
+) -> None:
     app = Flask(__name__)
     FlaskSchema(app)
 

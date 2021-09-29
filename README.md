@@ -43,9 +43,9 @@ schema-validator
         # balabala
         return dict(id=1, name="2")
         
-    @app.put("/")
+    @app.get("/")
     @validate(
-        body=Todo,
+        query=Todo,
         responses={200: TodoResponse, 400: TodoResponse}
     )
     def update_todo():
@@ -61,18 +61,37 @@ schema-validator
         # balabala
         return jsonify(id=1)
      
-    @tags("SOME-TAG", "OTHER-TAG")
+    @tags("SOME-TAG", "OTHER-TAG")  # only for swagger
     class View(MethodView):
         @validate(...)
         def get(self):
             return {}
        
-    app.cli.add_command(generate_schema_command)
     
-    virtualenv:  flask schema swagger.json -> generate json swagger
 ```
 
+### How to show the swagger
+```
 
-##### FEATURES
-    - direct package/api/view_class name to export json-swagger
-    - direct tag to swagger html
+app.config["SWAGGER_ROUTE"] = True
+
+http://yourhost/docs   -> show the all swagger
+
+http://yourhost/docs/{tag} -> show the swagger which include tag
+
+```
+
+### How to export the swagger
+```
+add command in flask:
+    app.cli.add_command(generate_schema_command)
+
+Export all swagger to json file:
+
+ - flask schema -o swagger.json
+
+Export the swagger which include the ACCOUNT tag:
+
+ - flask schema -o swagger.json -t ACCOUNT
+
+```
