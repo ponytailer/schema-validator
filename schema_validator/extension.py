@@ -154,7 +154,8 @@ def _build_openapi_schema(
 
     for rule in app.url_map.iter_rules():
         if rule.endpoint in [
-            "static", "openapi", "swagger_ui"
+            "static", "openapi", "swagger_ui",
+            "swagger_ui_tag", "openapi_tag"
         ]:
             continue
 

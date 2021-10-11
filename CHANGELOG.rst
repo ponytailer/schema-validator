@@ -1,3 +1,7 @@
+0.1.15 2021-10-11
+-----------------
+* ignore some endpoints
+
 0.1.12 2021-09-29
 -----------------
 * the default response schema
