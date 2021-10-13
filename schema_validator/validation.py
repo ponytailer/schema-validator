@@ -62,9 +62,13 @@ def check_response_schema(
             responses = pydantic_dataclass(responses).__pydantic_model__
         responses = {200: responses}
 
-    for k, v in responses.items():
+    for status_code, v in responses.items():
+        try:
+            code = int(status_code)
+        except BaseException as e:
+            raise ValueError(f"invalid status_code: {status_code}, {str(e)}")
         if is_builtin_dataclass(v):
-            responses[k] = pydantic_dataclass(v).__pydantic_model__
+            responses[code] = pydantic_dataclass(v).__pydantic_model__
 
     return responses
 
