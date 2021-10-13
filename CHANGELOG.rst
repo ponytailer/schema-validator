@@ -1,3 +1,7 @@
+0.1.16 2021-10-13
+-----------------
+* check responses code type 
+
 0.1.15 2021-10-11
 -----------------
 * ignore some endpoints
