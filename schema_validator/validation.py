@@ -31,9 +31,6 @@ class DataSource(Enum):
 def check_query_string_schema(query_string: PydanticModel) -> PydanticModel:
     if is_builtin_dataclass(query_string):
         query_string = pydantic_dataclass(query_string).__pydantic_model__
-    query_string_schema = model_schema(query_string)
-    if len(query_string_schema.get("required", [])) != 0:
-        raise SchemaInvalidError("Fields must be optional")
     return query_string
 
 
