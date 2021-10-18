@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic.dataclasses import dataclass as pydantic_dataclass, \
     is_builtin_dataclass
 from pydantic.schema import model_schema
-from flask import Response, jsonify, request, g
+from flask import Response, jsonify, request, g, current_app
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest
 
@@ -239,7 +239,7 @@ def validate(
             if err:
                 return jsonify(validation_error=err), BadRequest.code
 
-            result = func(*args, **kwargs)
+            result = current_app.ensure_async(func)(*args, **kwargs)
 
             if responses:
                 return check_response(result, responses)
