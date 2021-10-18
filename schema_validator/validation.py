@@ -239,7 +239,7 @@ def validate(
             if err:
                 return jsonify(validation_error=err), BadRequest.code
 
-            result = current_app.ensure_async(func)(*args, **kwargs)
+            result = current_app.ensure_sync(func)(*args, **kwargs)
 
             if responses:
                 return check_response(result, responses)
