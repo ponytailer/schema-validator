@@ -36,7 +36,7 @@ def generate_schema_command(
     schema = _build_openapi_schema(
         app, app.extensions["FLASK_SCHEMA"], tag if tag else None)
 
-    formatted_spec = json.dumps(schema, indent=2)
+    formatted_spec = json.dumps(schema, indent=2, ensure_ascii=False)
     if output is not None:
         with open(output, "w") as file_:
             click.echo(formatted_spec, file=file_)
