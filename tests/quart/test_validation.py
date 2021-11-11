@@ -4,14 +4,10 @@ from typing import Any, Optional
 import pytest
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from flask import Flask, jsonify
+from quart import Quart, jsonify
 
-from schema_validator import (
-    DataSource,
-    FlaskSchema,
-    ResponseReturnValue,
-    validate
-)
+from schema_validator import DataSource, SchemaValidator
+from schema_validator.quart import validate
 
 
 @dataclass
@@ -64,6 +60,7 @@ VALID_PyDC = PyDCItem(count=2, details=PyDCDetails(name="bob"))
 INVALID_PyDC = PyDCDetails(name="bob")
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("path", ["/", "/dc"])
 @pytest.mark.parametrize(
     "json, status",
@@ -72,25 +69,26 @@ INVALID_PyDC = PyDCDetails(name="bob")
         (INVALID_DICT, 400),
     ],
 )
-def test_request_validation(path: str, json: dict, status: int) -> None:
-    app = Flask(__name__)
-    FlaskSchema(app)
+async def test_request_validation(path: str, json: dict, status: int) -> None:
+    app = Quart(__name__)
+    SchemaValidator(app)
 
     @app.route("/", methods=["POST"])
     @validate(body=Item)
-    def item() -> ResponseReturnValue:
+    async def item():
         return ""
 
     @app.route("/dc", methods=["POST"])
     @validate(body=DCItem)
-    def dc_item() -> ResponseReturnValue:
+    async def dc_item():
         return ""
 
     test_client = app.test_client()
-    response = test_client.post(path, json=json)
+    response = await test_client.post(path, json=json)
     assert response.status_code == status
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "data, status",
     [
@@ -98,20 +96,21 @@ def test_request_validation(path: str, json: dict, status: int) -> None:
         ({"age": 2}, 400),
     ],
 )
-def test_request_form_validation(data: dict, status: int) -> None:
-    app = Flask(__name__)
-    FlaskSchema(app)
+async def test_request_form_validation(data: dict, status: int) -> None:
+    app = Quart(__name__)
+    SchemaValidator(app)
 
     @app.route("/", methods=["POST"])
     @validate(body=Details, source=DataSource.FORM)
-    def item() -> ResponseReturnValue:
+    async def item():
         return ""
 
     test_client = app.test_client()
-    response = test_client.post("/", data=data)
+    response = await test_client.post("/", form=data)
     assert response.status_code == status
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "model, return_value, status",
     [
@@ -129,23 +128,24 @@ def test_request_form_validation(data: dict, status: int) -> None:
         (PyDCItem, INVALID_PyDC, 400),
     ],
 )
-def test_response_validation(
+async def test_response_validation(
     model: Any, return_value: Any,
     status: int
 ) -> None:
-    app = Flask(__name__)
-    FlaskSchema(app)
+    app = Quart(__name__)
+    SchemaValidator(app)
 
     @app.route("/")
     @validate(responses=model)
-    def item() -> ResponseReturnValue:
+    async def item():
         return jsonify(return_value)
 
     test_client = app.test_client()
-    response = test_client.get("/")
+    response = await test_client.get("/")
     assert response.status_code == status
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "path, status",
     [
@@ -156,15 +156,15 @@ def test_response_validation(
         ("/?count=a", 200),
     ],
 )
-def test_querystring_validation(path: str, status: int) -> None:
-    app = Flask(__name__)
-    FlaskSchema(app)
+async def test_querystring_validation(path: str, status: int) -> None:
+    app = Quart(__name__)
+    SchemaValidator(app)
 
     @app.route("/")
     @validate(query_string=QueryItem)
-    def query_item() -> ResponseReturnValue:
+    async def query_item():
         return ""
 
     test_client = app.test_client()
-    response = test_client.get(path)
+    response = await test_client.get(path)
     assert response.status_code == status

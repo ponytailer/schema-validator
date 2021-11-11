@@ -1,77 +1,24 @@
 from dataclasses import asdict, is_dataclass
-from enum import Enum, auto
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Union, cast, Iterable
+from typing import (Any, Callable, Dict, Iterable, List, Optional, Union, cast)
 
 from pydantic import BaseModel, ValidationError
-from pydantic.dataclasses import dataclass as pydantic_dataclass, \
-    is_builtin_dataclass
-from pydantic.schema import model_schema
-from flask import Response, jsonify, request, g, current_app
+from pydantic.dataclasses import is_builtin_dataclass
+from flask import Response, current_app, g, jsonify, request
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest
 
-from .constants import (
-    SCHEMA_QUERYSTRING_ATTRIBUTE,
-    SCHEMA_TAG_ATTRIBUTE,
-    SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE
+from schema_validator.constants import (
+    SCHEMA_QUERYSTRING_ATTRIBUTE, SCHEMA_REQUEST_ATTRIBUTE,
+    SCHEMA_RESPONSE_ATTRIBUTE, SCHEMA_TAG_ATTRIBUTE
 )
-from .typing import PydanticModel
-
-
-class SchemaInvalidError(Exception):
-    pass
-
-
-class DataSource(Enum):
-    FORM = auto()
-    JSON = auto()
-
-
-def check_query_string_schema(query_string: PydanticModel) -> PydanticModel:
-    if is_builtin_dataclass(query_string):
-        query_string = pydantic_dataclass(query_string).__pydantic_model__
-    return query_string
-
-
-def check_body_schema(
-    body: PydanticModel,
-    source: DataSource
-) -> PydanticModel:
-    if is_builtin_dataclass(body):
-        body = pydantic_dataclass(body).__pydantic_model__
-
-    schema = model_schema(body)
-    if source == DataSource.FORM and any(
-        schema["properties"][field]["type"] == "object" for field in
-            schema["properties"]
-    ):
-        raise SchemaInvalidError("Form must not have nested objects")
-    return body
-
-
-def check_response_schema(
-    responses: Union[PydanticModel, Dict]
-) -> Dict[int, PydanticModel]:
-
-    if not isinstance(responses, dict):
-        if is_builtin_dataclass(responses):
-            responses = pydantic_dataclass(responses).__pydantic_model__
-        responses = {200: responses}
-
-    for status_code, v in responses.items():
-        try:
-            code = int(status_code)
-        except BaseException as e:
-            raise ValueError(f"invalid status_code: {status_code}, {str(e)}")
-        if is_builtin_dataclass(v):
-            responses[code] = pydantic_dataclass(v).__pydantic_model__
-
-    return responses
+from schema_validator.types import PydanticModel
+from schema_validator.utils import DataSource, check_body_schema, \
+    check_query_string_schema, check_response_schema
 
 
 def check_response(result, response_model: Dict[int, PydanticModel]):
-    status_or_headers: Union[None, int, str, Dict, list] = None
+    status_or_headers: Union[None, int, str, Dict, List] = None
     headers: Optional[Headers] = None
 
     if isinstance(result, tuple):
@@ -111,14 +58,6 @@ def check_response(result, response_model: Dict[int, PydanticModel]):
             model_value = cast(BaseModel, model_value)
             return model_value.dict(), status_or_headers, headers
     return result
-
-
-def tags(*tags: Iterable[str]) -> Callable:
-    """Add tag names to the route."""
-    def decorator(func: Callable) -> Callable:
-        setattr(func, SCHEMA_TAG_ATTRIBUTE, list(set(tags)))
-        return func
-    return decorator
 
 
 def validate(
@@ -205,7 +144,7 @@ def validate(
     if responses is not None:
         responses = check_response_schema(responses)
 
-    def decorator(func: Callable) -> Callable[..., Response]:
+    def decorator(func: Callable) -> Callable:
 
         if query_string:
             setattr(func, SCHEMA_QUERYSTRING_ATTRIBUTE, query_string)
@@ -220,7 +159,10 @@ def validate(
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             err = {}
             if body:
-                data = request.get_json() if source == DataSource.JSON else request.form  # noqa
+                if source == DataSource.JSON:
+                    data = request.get_json()
+                else:
+                    data = request.form
                 try:
                     body_model = body(**data)
                 except (TypeError, ValidationError) as ve:

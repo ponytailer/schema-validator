@@ -1,13 +1,22 @@
-from typing import Dict, List, Tuple, Type, TypedDict, Union, Optional
+from typing import Dict, List, Optional, Tuple, Type, TypedDict, Union
 from dataclasses import dataclass
 
 from pydantic import BaseModel
-from flask.typing import (
-    HeadersValue,
-    ResponseReturnValue as FlaskResponseReturnValue,
-    ResponseValue as FlaskResponseValue,
-    StatusCode,
-)
+
+try:
+    from flask.typing import (
+        HeadersValue,
+        ResponseReturnValue as FlaskResponseReturnValue,
+        ResponseValue as FlaskResponseValue,
+        StatusCode,
+    )
+except ImportError:
+    from quart.typing import (
+        HeadersValue,
+        ResponseReturnValue as FlaskResponseReturnValue,
+        ResponseValue as FlaskResponseValue,
+        StatusCode,
+    )
 
 PydanticModel = Union[Type[BaseModel], Type]
 

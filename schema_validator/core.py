@@ -5,16 +5,24 @@ from typing import Any, Dict, List, Optional, Tuple
 from humps import camelize, decamelize
 from pydantic.json import pydantic_encoder
 from pydantic.schema import model_schema
-from flask import Flask, current_app, render_template_string
-from flask.json import JSONDecoder, JSONEncoder
 
-from .constants import (
+from schema_validator.constants import (
     IGNORE_METHODS, REF_PREFIX, SCHEMA_QUERYSTRING_ATTRIBUTE,
     SCHEMA_REQUEST_ATTRIBUTE, SCHEMA_RESPONSE_ATTRIBUTE, SCHEMA_TAG_ATTRIBUTE,
-    SWAGGER_CSS_URL, SWAGGER_JS_URL, SWAGGER_TEMPLATE
+    SWAGGER_CSS_URL, SWAGGER_JS_URL
 )
-from .typing import ServerObject
-from .validation import DataSource
+from schema_validator.types import ServerObject
+from schema_validator.flask.validation import DataSource
+
+try:
+    from flask import current_app, render_template_string
+    from flask import Flask as App
+    from flask.json import JSONDecoder, JSONEncoder
+except ImportError:
+    from quart import Quart as App
+    from quart import current_app, render_template_string
+    from quart.json import JSONDecoder, JSONEncoder
+
 
 PATH_RE = re.compile("<(?:[^:]*:)?([^>]+)>")
 
@@ -40,23 +48,19 @@ class CasingJSONDecoder(JSONDecoder):
         return decamelize(object_)
 
 
-class FlaskSchema:
+class SchemaValidator:
     """A Flask-Schema instance.
 
         app = Flask(__name__)
         FlaskSchema(app)
 
         flask_schema = FlaskSchema()
-
     or
-
         def create_app():
             app = Flask(__name__)
             flask_schema.init_app(app)
             return app
     Arguments:
-        openapi_path: The path used to serve the openapi json on, or None
-            to disable documentation.
         swagger_ui_path: The path used to serve the documentation UI using
             swagger or None to disable swagger documentation.
         title: The publishable title for the app.
@@ -65,7 +69,7 @@ class FlaskSchema:
 
     def __init__(
         self,
-        app: Optional[Flask] = None,
+        app: App = None,
         *,
         swagger_ui_path: Optional[str] = "/swagger/docs",
         title: Optional[str] = None,
@@ -83,8 +87,8 @@ class FlaskSchema:
         if app is not None:
             self.init_app(app)
 
-    def init_app(self, app: Flask) -> None:
-        app.extensions["FLASK_SCHEMA"] = self
+    def init_app(self, app: App) -> None:
+        app.extensions["SCHEMA_VALIDATOR"] = self
         self.title = app.name if self.title is None else self.title
         if self.convert_casing:
             app.json_decoder = CasingJSONDecoder
@@ -93,45 +97,38 @@ class FlaskSchema:
             app.json_encoder = PydanticJSONEncoder
 
         app.config.setdefault(
-            "FLASK_SCHEMA_SWAGGER_JS_URL",
+            "SCHEMA_SWAGGER_JS_URL",
             SWAGGER_JS_URL
         )
         app.config.setdefault(
-            "FLASK_SCHEMA_SWAGGER_CSS_URL",
+            "SCHEMA_SWAGGER_CSS_URL",
             SWAGGER_CSS_URL
         )
 
         if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
+            try:
+                from .flask import openapi, swagger_ui
+            except ImportError:
+                from .quart import openapi, swagger_ui
+
             app.add_url_rule(
                 self.openapi_path, "openapi",
-                self.openapi
+                lambda: openapi(self)
             )
             app.add_url_rule(
                 self.openapi_tag_path, "openapi_tag",
-                lambda tag: self.openapi(tag)
+                lambda tag: openapi(self, tag)
             )
+
             if self.swagger_ui_path is not None:
                 app.add_url_rule(
                     self.swagger_ui_path, "swagger_ui",
-                    self.swagger_ui
+                    lambda: swagger_ui(self)
                 )
                 app.add_url_rule(
                     f"{self.swagger_ui_path}/<tag>", "swagger_ui_tag",
-                    lambda tag: self.swagger_ui(tag)
+                    lambda tag: swagger_ui(self, tag)
                 )
-
-    def openapi(self, tag: Optional[str] = None) -> dict:
-        return _build_openapi_schema(current_app, self, tag)
-
-    def swagger_ui(self, tag: Optional[str] = None) -> str:
-        path = f"/swagger/openapi-{tag}.json" if tag else self.openapi_path
-        return render_template_string(
-            SWAGGER_TEMPLATE,
-            title=self.title,
-            openapi_path=path,
-            swagger_js_url=current_app.config["FLASK_SCHEMA_SWAGGER_JS_URL"],
-            swagger_css_url=current_app.config["FLASK_SCHEMA_SWAGGER_CSS_URL"],
-        )
 
 
 def _split_definitions(schema: dict) -> Tuple[dict, dict]:
@@ -141,8 +138,8 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
 
 
 def _build_openapi_schema(
-    app: Flask,
-    extension: FlaskSchema,
+    app: App,
+    extension: SchemaValidator,
     expected_tag: str = None
 ) -> dict:
     """

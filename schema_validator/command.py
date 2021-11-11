@@ -1,11 +1,16 @@
 import json
-from typing import Optional
 
 import click
-from flask.cli import with_appcontext
-from flask import current_app as app
 
-from .extension import _build_openapi_schema
+from schema_validator.types import Optional
+from schema_validator.core import _build_openapi_schema
+
+try:
+    from flask import current_app as app
+    from flask.cli import with_appcontext
+except ImportError:
+    from quart import current_app as app
+    from quart.cli import with_appcontext
 
 
 @click.command("schema")
@@ -34,7 +39,7 @@ def generate_schema_command(
     virtualenv: flask schema
     """
     schema = _build_openapi_schema(
-        app, app.extensions["FLASK_SCHEMA"], tag if tag else None)
+        app, app.extensions["VALIDATOR_SCHEMA"], tag if tag else None)
 
     formatted_spec = json.dumps(schema, indent=2, ensure_ascii=False)
     if output is not None:

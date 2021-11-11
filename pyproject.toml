@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "schema_validator"
-version = "0.1.19"
+version = "0.1.20"
 description = "A flask extension to provide schema validation with pydantic."
 authors = ["hs <huangxiaohen2738@gmail.com>"]
 classifiers = [
@@ -18,15 +18,25 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/huangxiaohen2738/schema-validator"
 
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
 [tool.poetry.dependencies]
 python = ">=3.7"
+pyhumps = "*"
 
 pydantic = ">=1.8"
-flask = ">= 2.0"
-pyhumps = "*"
+
+[tool.poetry.extras]
+flask = ["flask"]
+quart = ["quart"]
+
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
+pytest-asyncio = "*"
 
 [build-system]
 requires = ["poetry_core>=1.0.0"]
