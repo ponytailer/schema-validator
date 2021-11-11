@@ -1,4 +1,5 @@
 import re
+import logging
 from collections.abc import Mapping
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,19 +15,19 @@ from schema_validator.constants import (
 from schema_validator.types import ServerObject
 from schema_validator.flask.validation import DataSource
 
+
 try:
-    from flask import current_app, render_template_string
-    from flask import Flask
-    from flask.json import JSONDecoder, JSONEncoder
-    IS_FLASK = True
-except ImportError:
-    from quart import Quart
     from quart import current_app, render_template_string
     from quart.json import JSONDecoder, JSONEncoder
     IS_FLASK = False
+except ImportError:
+    from flask import current_app, render_template_string, Flask
+    from flask.json import JSONDecoder, JSONEncoder
+    IS_FLASK = True
 
 
 PATH_RE = re.compile("<(?:[^:]*:)?([^>]+)>")
+logger = logging.getLogger(__name__)
 
 
 class PydanticJSONEncoder(JSONEncoder):
@@ -118,12 +119,16 @@ class SchemaValidator:
         if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
             if IS_FLASK:
                 from .flask import openapi, swagger_ui
+                app_name = "FLASK"
             else:
                 from .quart import openapi, swagger_ui
+                app_name = "QUART"
+
+            logger.info(f"start validator by {app_name}")
 
             app.add_url_rule(
                 self.openapi_path, "openapi",
-                lambda: openapi(self)
+                lambda: openapi(validator=self)
             )
             app.add_url_rule(
                 self.openapi_tag_path, "openapi_tag",
@@ -133,7 +138,7 @@ class SchemaValidator:
             if self.swagger_ui_path is not None:
                 app.add_url_rule(
                     self.swagger_ui_path, "swagger_ui",
-                    lambda: swagger_ui(self)
+                    lambda: swagger_ui(validator=self)
                 )
                 app.add_url_rule(
                     f"{self.swagger_ui_path}/<tag>", "swagger_ui_tag",

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "schema_validator"
-version = "0.2.0"
+version = "0.2.2"
 description = "A flask/quart extension to provide schema validation with pydantic."
 authors = ["hs <huangxiaohen2738@gmail.com>"]
 classifiers = [
