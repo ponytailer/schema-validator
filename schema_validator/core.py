@@ -113,7 +113,7 @@ class SchemaValidator:
                 IS_FLASK = True
             else:
                 IS_FLASK = False
-        except ModuleNotFoundError:
+        except BaseException:
             IS_FLASK = False
 
         if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
@@ -121,7 +121,8 @@ class SchemaValidator:
                 from .flask import openapi, swagger_ui
                 app_name = "FLASK"
             else:
-                from .quart import openapi, swagger_ui
+                from .quart import openapi, swagger_ui, convert_model_result
+                app.make_response = convert_model_result(app.make_response)
                 app_name = "QUART"
 
             logger.info(f"start validator by {app_name}")

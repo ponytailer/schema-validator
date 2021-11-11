@@ -16,6 +16,6 @@ def swagger_ui(validator, tag: Optional[str] = None) -> str:
         SWAGGER_TEMPLATE,
         title=validator.title,
         openapi_path=path,
-        swagger_js_url=current_app.config["FLASK_SCHEMA_SWAGGER_JS_URL"],
-        swagger_css_url=current_app.config["FLASK_SCHEMA_SWAGGER_CSS_URL"],
+        swagger_js_url=current_app.config["SCHEMA_SWAGGER_JS_URL"],
+        swagger_css_url=current_app.config["SCHEMA_SWAGGER_CSS_URL"],
     )
