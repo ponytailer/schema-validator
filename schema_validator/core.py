@@ -16,12 +16,14 @@ from schema_validator.flask.validation import DataSource
 
 try:
     from flask import current_app, render_template_string
-    from flask import Flask as App
+    from flask import Flask
     from flask.json import JSONDecoder, JSONEncoder
+    IS_FLASK = True
 except ImportError:
-    from quart import Quart as App
+    from quart import Quart
     from quart import current_app, render_template_string
     from quart.json import JSONDecoder, JSONEncoder
+    IS_FLASK = False
 
 
 PATH_RE = re.compile("<(?:[^:]*:)?([^>]+)>")
@@ -69,7 +71,7 @@ class SchemaValidator:
 
     def __init__(
         self,
-        app: App = None,
+        app=None,
         *,
         swagger_ui_path: Optional[str] = "/swagger/docs",
         title: Optional[str] = None,
@@ -87,7 +89,7 @@ class SchemaValidator:
         if app is not None:
             self.init_app(app)
 
-    def init_app(self, app: App) -> None:
+    def init_app(self, app) -> None:
         app.extensions["SCHEMA_VALIDATOR"] = self
         self.title = app.name if self.title is None else self.title
         if self.convert_casing:
@@ -105,10 +107,18 @@ class SchemaValidator:
             SWAGGER_CSS_URL
         )
 
+        try:
+            if isinstance(app, Flask):
+                IS_FLASK = True
+            else:
+                IS_FLASK = False
+        except ModuleNotFoundError:
+            IS_FLASK = False
+
         if self.openapi_path is not None and app.config.get("SWAGGER_ROUTE"):
-            try:
+            if IS_FLASK:
                 from .flask import openapi, swagger_ui
-            except ImportError:
+            else:
                 from .quart import openapi, swagger_ui
 
             app.add_url_rule(
@@ -138,7 +148,7 @@ def _split_definitions(schema: dict) -> Tuple[dict, dict]:
 
 
 def _build_openapi_schema(
-    app: App,
+    app,
     extension: SchemaValidator,
     expected_tag: str = None
 ) -> dict:
