@@ -18,15 +18,21 @@ schema-validator
     from pydantic import BaseModel
 
     from flask import Flask
-    from schema_validator import FlaskSchema, validate
+    from quart import Quart
+    from schema_validator import SchemaValidator
+    from schema_validator.flask import validate
+    # from schema_validator.quart import validate
+
 
     app = Flask(__name__)
+
+    # or 
+    app = Quart(__name__)
     
-    FlaskSchema(app)
     
     OR
     
-    schema = FlaskSchema()
+    schema = SchemaValidator(app)
     schema.init_app(app)
 
     @dataclass
@@ -61,7 +67,7 @@ schema-validator
     def delete():
         # balabala
         return jsonify(id=1)
-     
+
     @tags("SOME-TAG", "OTHER-TAG")  # only for swagger
     class View(MethodView):
         @validate(...)
@@ -90,16 +96,16 @@ http://yourhost/swagger/docs/{tag} -> show the swagger which include tag
 <summary>How to export the swagger </summary>
 
 ```
-add command in flask:
+add command in flask/quart:
     app.cli.add_command(generate_schema_command)
 
 Export all swagger to json file:
 
- - flask schema -o swagger.json
+ - flask/quart schema -o swagger.json
 
 Export the swagger which include the ACCOUNT tag:
 
- - flask schema -o swagger.json -t ACCOUNT
+ - flask/quart schema -o swagger.json -t ACCOUNT
 
 ```
 </details>
