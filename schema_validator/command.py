@@ -39,7 +39,7 @@ def generate_schema_command(
     virtualenv: flask schema
     """
     schema = _build_openapi_schema(
-        app, app.extensions["VALIDATOR_SCHEMA"], tag if tag else None)
+        app, app.extensions["SCHEMA_VALIDATOR"], tag if tag else None)
 
     formatted_spec = json.dumps(schema, indent=2, ensure_ascii=False)
     if output is not None:

@@ -13,7 +13,7 @@ from schema_validator.constants import (
     SWAGGER_CSS_URL, SWAGGER_JS_URL
 )
 from schema_validator.types import ServerObject
-from schema_validator.flask.validation import DataSource
+from schema_validator.utils import DataSource
 
 
 try:
